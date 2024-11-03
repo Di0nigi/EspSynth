@@ -18,6 +18,7 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 TaskHandle_t displayTaskHandle;
+TaskHandle_t audioTaskHandle;
 
 
 const int dacPin = 25;
@@ -98,7 +99,7 @@ class Oscillator{
 
     //phaseIncrement = (freq* 65536) / sampleRate;
 
-    int val;
+    int val=0;
 
     switch (type) {
             case 0: // Sine wave
@@ -165,53 +166,9 @@ void render(void *parameter){
   vTaskDelay(100 / portTICK_PERIOD_MS);}
 }
 
-void setup() {
-  Serial.begin(115200);
-  
-
-  pinMode(potPin1,INPUT);
-  pinMode(potPin2,INPUT);
-  pinMode(potPin3,INPUT);
-  pinMode(modePin,INPUT_PULLUP);
-
-  pinMode(btP1,INPUT_PULLUP);
-  pinMode(btP2,INPUT_PULLUP);
-  pinMode(btP3,INPUT_PULLUP);
-  pinMode(btP4,INPUT_PULLUP);
-  pinMode(btP5,INPUT_PULLUP);
-  pinMode(btP6,INPUT_PULLUP);
-  pinMode(btP7,INPUT_PULLUP);
-  pinMode(btP8,INPUT_PULLUP);
-  pinMode(btP9,INPUT_PULLUP);
-  pinMode(btP10,INPUT_PULLUP);
-  pinMode(btP11,INPUT_PULLUP);
-  pinMode(btP12,INPUT_PULLUP);
-
-   xTaskCreatePinnedToCore(
-        render,  // Task function
-        "DisplayUpdate",    // Task name
-        2048,               // Stack size (in bytes)
-        NULL,               // Task parameter
-        1,                  // Task priority
-        &displayTaskHandle, // Task handle
-        1                   // Core to pin to (Core 1)
-    );
-
-
-
-  if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for(;;); 
-  }
-
-  display.clearDisplay();
- 
-
-
-}
-
-void loop() {
-  //Serial.println("correct");
+void core0Loop(void *parameter){
+  for (;;) {
+     //Serial.println("correct");
   int modeBt = digitalRead(modePin);
   int bt1 = digitalRead(btP1);
   int bt2 = digitalRead(btP2);
@@ -302,6 +259,68 @@ void loop() {
   }
   //playNote(0);
   audioPipeline(play);
+ 
+
+  }
+
+}
+
+void setup() {
+
+  Serial.begin(115200);
+   if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); 
+  }
+
+  display.clearDisplay();
+  
+
+  pinMode(potPin1,INPUT);
+  pinMode(potPin2,INPUT);
+  pinMode(potPin3,INPUT);
+  pinMode(modePin,INPUT_PULLUP);
+
+  pinMode(btP1,INPUT_PULLUP);
+  pinMode(btP2,INPUT_PULLUP);
+  pinMode(btP3,INPUT_PULLUP);
+  pinMode(btP4,INPUT_PULLUP);
+  pinMode(btP5,INPUT_PULLUP);
+  pinMode(btP6,INPUT_PULLUP);
+  pinMode(btP7,INPUT_PULLUP);
+  pinMode(btP8,INPUT_PULLUP);
+  pinMode(btP9,INPUT_PULLUP);
+  pinMode(btP10,INPUT_PULLUP);
+  pinMode(btP11,INPUT_PULLUP);
+  pinMode(btP12,INPUT_PULLUP);
+
+   xTaskCreatePinnedToCore(
+        render,  // Task function
+        "render",    // Task name
+        10000,               // Stack size (in bytes)
+        NULL,               // Task parameter
+        1,                  // Task priority
+        &displayTaskHandle, // Task handle
+        1                   // Core to pin to (Core 1)
+    );
+    xTaskCreatePinnedToCore(
+        core0Loop,  // Task function
+        "audio",    // Task name
+        10000,               // Stack size (in bytes)
+        NULL,               // Task parameter
+        1,                  // Task priority
+        &audioTaskHandle, // Task handle
+        0                   // Core to pin to (Core 1)
+    );
+ 
+
+
+}
+
+void loop() {
+  //int coreID = xPortGetCoreID();  // Get the current core ID
+   // Serial.print("Running on core: ");
+   // Serial.println(coreID);
   
   //render();
 }
@@ -352,10 +371,8 @@ void audioPipeline(bool p){
     playNote(0);
 
   }
-  
-
-  
-  delayMicroseconds(1000000 / osc.sampleRate);
+  //delayMicroseconds(1000000 / osc.sampleRate);
+  vTaskDelay(1);
 }
 
 
