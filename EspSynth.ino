@@ -3,7 +3,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "driver/dac.h"
-#include <math.h>
+#include "customOscillator.h"
+
 
 
 
@@ -64,6 +65,7 @@ uint8_t notes[8][12] = {
 
 int prevMPStatus= HIGH;
 int mode = 0;
+
 //const uint8_t audioSample[] = {128, 130, 132, 128, 126, 124, 128, 130}; // Example values
 //int sampleLength = sizeof(audioSample) / sizeof(audioSample[0]);
 //int sampleRate = 8000;
@@ -79,54 +81,6 @@ unsigned long previousMicros = 0;
 int t = 0;
 
 
-class Oscillator{
-  public: 
-  int amplitude = 127;
-  int sampleRate = 8000;
-  unsigned long phase=0;  // Phase accumulator for waveform
-  int phaseIncrement=0; 
-  int frequency = 0;
-
-
-  int type = 0;
-  Oscillator(){};
-  void setFrequency(int freq) {
-        frequency = freq;
-        phaseIncrement = (frequency * 65536) / sampleRate;
-    }
-
-  int sample(){
-
-    //phaseIncrement = (freq* 65536) / sampleRate;
-
-    int val=0;
-
-    switch (type) {
-            case 0: // Sine wave
-                val = amplitude * sin(2 * PI * phase / 65536) + 128;
-                break;
-            case 1: // Square wave
-                val = (phase < 32768) ? amplitude + 128 : 128 - amplitude;
-                break;
-            case 2: // Sawtooth wave
-                val = (phase >> 8) - 128;
-                break;
-            case 3: // Triangle wave
-                val = (phase < 32768) ? (phase >> 7) - 128 : 127 - (phase >> 7);
-                break;
-        }
-
-        phase = (phase + phaseIncrement) & 0xFFFF;
-    return val;
-
-  }
-  void changeType(int w){
-
-    type = w;
-
-  }
-
-};
 
 Oscillator osc;
 
@@ -165,105 +119,11 @@ void render(void *parameter){
   display.display();
   vTaskDelay(100 / portTICK_PERIOD_MS);}
 }
-
+/*
 void core0Loop(void *parameter){
   for (;;) {
-     //Serial.println("correct");
-  int modeBt = digitalRead(modePin);
-  int bt1 = digitalRead(btP1);
-  int bt2 = digitalRead(btP2);
-  int bt3 = digitalRead(btP3);
-  int bt4 = digitalRead(btP4);
-  int bt5 = digitalRead(btP5);
-  int bt6 = digitalRead(btP6);
-  int bt7 = digitalRead(btP7);
-  int bt8 = digitalRead(btP8);
-  int bt9 = digitalRead(btP9);
-  int bt10 = digitalRead(btP10);
-  int bt11 = digitalRead(btP11);
-  int bt12 = digitalRead(btP12);
-  // Mode handeling
-  //Serial.println(modeBt);
-  if (modeBt == LOW && prevMPStatus == HIGH ){
-    mode++;
-    if (mode>4){
-      mode = 0;
-    }
   }
-  prevMPStatus = modeBt;
-  //setMode(mode);
-  potFunc1();
-  potFunc2();
-  potFunc3();
-  //Serial.println(bt1);
-  play = false;
-  if (bt1 == LOW){
-    currentNote = notes[oct-1][0];
-    play = true;
-   
-  }
-  if (bt2 == LOW){
-    currentNote= notes[oct-1][1];
-    //Serial.println(2);
-    play = true;
-  }
-  if (bt3 == LOW){
-    currentNote= notes[oct-1][2];
-    //Serial.println(3);
-    play = true;
-  }
-  if (bt4 == LOW){
-    currentNote= notes[oct-1][3];
-    //Serial.println(4);
-    play = true;
-  }
-  if (bt5 == LOW){
-    currentNote= notes[oct-1][4];
-    //Serial.println(5);
-    play = true;
-  }
-  if (bt6 == LOW){
-    currentNote= notes[oct-1][5];
-    //Serial.println(6);
-    play = true;
-  }
-  if (bt7 == LOW){
-    currentNote= notes[oct-1][6];
-    //Serial.println(7);
-    play = true;
-  }
-  if (bt8 == LOW){
-    currentNote= notes[oct-1][7];
-    //Serial.println(8);
-    play = true;
-  }
-  if (bt9 == LOW){
-    currentNote= notes[oct-1][8];
-    //Serial.println(9);
-    play = true;
-  }
-  if (bt10 == LOW){
-    currentNote= notes[oct-1][9];
-    //Serial.println(10);
-    play = true;
-  }
-  if (bt11 == LOW){
-    currentNote= notes[oct-1][10];
-    //Serial.println(11);
-    play = true;
-  }
-  if (bt12 == LOW){
-    currentNote= notes[oct-1][11];
-    //Serial.println(12);
-    play = true;
-  }
-  //playNote(0);
-  audioPipeline(play);
- 
-
-  }
-
-}
+}*/
 
 void setup() {
 
@@ -301,9 +161,9 @@ void setup() {
         NULL,               // Task parameter
         1,                  // Task priority
         &displayTaskHandle, // Task handle
-        1                   // Core to pin to (Core 1)
+        0                   // Core to pin to (Core 1)
     );
-    xTaskCreatePinnedToCore(
+   /* xTaskCreatePinnedToCore(
         core0Loop,  // Task function
         "audio",    // Task name
         10000,               // Stack size (in bytes)
@@ -311,7 +171,7 @@ void setup() {
         1,                  // Task priority
         &audioTaskHandle, // Task handle
         0                   // Core to pin to (Core 1)
-    );
+    );*/
  
 
 
@@ -322,7 +182,99 @@ void loop() {
    // Serial.print("Running on core: ");
    // Serial.println(coreID);
   
-  //render();
+  //Serial.println("correct");
+  int modeBt = digitalRead(modePin);
+  int bt1 = digitalRead(btP1);
+  int bt2 = digitalRead(btP2);
+  int bt3 = digitalRead(btP3);
+  int bt4 = digitalRead(btP4);
+  int bt5 = digitalRead(btP5);
+  int bt6 = digitalRead(btP6);
+  int bt7 = digitalRead(btP7);
+  int bt8 = digitalRead(btP8);
+  int bt9 = digitalRead(btP9);
+  int bt10 = digitalRead(btP10);
+  int bt11 = digitalRead(btP11);
+  int bt12 = digitalRead(btP12);
+  // Mode handeling
+  //Serial.println(modeBt);
+  if (modeBt == LOW && prevMPStatus == HIGH ){
+    mode++;
+    if (mode>4){
+      mode = 0;
+    }
+  }
+  prevMPStatus = modeBt;
+  //setMode(mode);
+  potFunc1();
+  potFunc2();
+  potFunc3();
+  //Serial.println(bt1);
+  play = false;
+  if (bt1 == LOW){
+    currentNote = notes[oct-1][0];
+    play = true;
+   
+  }
+  else if (bt2 == LOW){
+    currentNote= notes[oct-1][1];
+    //Serial.println(2);
+    play = true;
+  }
+  else if (bt3 == LOW){
+    currentNote= notes[oct-1][2];
+    //Serial.println(3);
+    play = true;
+  }
+  else if (bt4 == LOW){
+    currentNote= notes[oct-1][3];
+    //Serial.println(4);
+    play = true;
+  }
+  else if (bt5 == LOW){
+    currentNote= notes[oct-1][4];
+    //Serial.println(5);
+    play = true;
+  }
+  else if (bt6 == LOW){
+    currentNote= notes[oct-1][5];
+    //Serial.println(6);
+    play = true;
+  }
+  else if (bt7 == LOW){
+    currentNote= notes[oct-1][6];
+    //Serial.println(7);
+    play = true;
+  }
+  else if (bt8 == LOW){
+    currentNote= notes[oct-1][7];
+    //Serial.println(8);
+    play = true;
+  }
+  else if (bt9 == LOW){
+    currentNote= notes[oct-1][8];
+    //Serial.println(9);
+    play = true;
+  }
+  else if (bt10 == LOW){
+    currentNote= notes[oct-1][9];
+    //Serial.println(10);
+    play = true;
+  }
+  else if (bt11 == LOW){
+    currentNote= notes[oct-1][10];
+    //Serial.println(11);
+    play = true;
+  }
+  else if (bt12 == LOW){
+    currentNote= notes[oct-1][11];
+    //Serial.println(12);
+    play = true;
+  }
+  //playNote(0);
+  audioPipeline(play);
+ 
+
 }
 
 
@@ -351,28 +303,25 @@ void potFunc3(){
   osc.changeType(wav);
 }
 
-
+/*
 void playNote(int sample){
   dacWrite(dacPin,sample);
-}
+}*/
 
 
 
 
 
 void audioPipeline(bool p){
-  
+  int sample =0;
   if (p){
     osc.setFrequency(currentNote);
-    int sample = osc.sample();
-    playNote(sample);
+    sample = osc.sample();
+    //playNote(sample);
   }
-  else{
-    playNote(0);
-
-  }
-  //delayMicroseconds(1000000 / osc.sampleRate);
-  vTaskDelay(1);
+  dacWrite(dacPin,sample);
+  //delayMicroseconds(100000 / osc.sampleRate);
+  //vTaskDelay(1);
 }
 
 
