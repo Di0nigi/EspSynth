@@ -62,6 +62,9 @@ int regNotes[8][12] = {
     {2093, 2217, 2349, 2489, 2637, 2794, 2960, 3136, 3322, 3520, 3729, 3951}
 };
 
+int oscGraph[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+
 
 int prevMPStatus= HIGH;
 int mode = 0;
@@ -73,6 +76,7 @@ int mode = 0;
 
 
 int bpm = 40;
+float ampl = 0.5;
 int wav = 0;
 int oct = 1;
 int currentNote = 0;
@@ -173,11 +177,15 @@ void ioHandler(){
   }
   else if (bt12 == LOW){
     currentNote= regNotes[oct-1][11];
-    Serial.print(oct-1);
-    Serial.print(" : ");
-    Serial.println( regNotes[oct-1][11]);
+    //Serial.print(oct-1);
+    //Serial.print(" : ");
+    //Serial.println( regNotes[oct-1][11]);
     play = true;
   }
+  if(play){circularShiftRight(currentNote);}
+  else{circularShiftRight(1);}
+  
+  
   //playNote(0);
   
 
@@ -188,19 +196,19 @@ void ioHandler(){
 void render(void *parameter){
   for (;;) {
   ioHandler();
-  
   display.clearDisplay();
   display.setTextSize(1);             
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0);
   display.setTextSize(1);
-
-  display.print("M: ");
-  display.println(mode);
-  display.print("bpm: ");
-  display.println(bpm);
+  if (mode== 0){
+    display.println("M: osc");
+  //display.print("bpm: ");
+  //display.println(bpm);
   display.print("oct: ");
   display.println(oct);
+  display.print("ampl: ");
+  display.println(ampl);
   if (wav == 0){
     display.println("wav: sqr");
   }
@@ -215,10 +223,48 @@ void render(void *parameter){
   }
   display.print("Nt: ");
   display.println(currentNote);
-
-  display.display();
-  //vTaskDelay(100 / portTICK_PERIOD_MS);
   }
+  else if (mode == 1){
+    display.println("M: lfo");
+
+  }
+  else if (mode == 2){
+    display.println("M: rev");
+
+  }
+  else if (mode == 3){
+    display.println("M: del");
+
+  }
+  else if (mode == 4){
+    display.println("M: eff");
+
+  }
+  display.fillRect(64, 0, 1, SCREEN_HEIGHT, WHITE);
+  display.fillRect(64, SCREEN_HEIGHT-1, 64, 1, WHITE);
+  int start=64;
+  for (int i = 0; i < 64; ++i) {
+    int barHeight = oscGraph[i]+1;
+    display.fillRect(start, SCREEN_HEIGHT-barHeight, 1, barHeight, WHITE);
+    start++;
+  }
+  
+  
+  display.display();
+  // vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
+}
+
+void circularShiftRight(int val) {
+  val=map(log(val), log(16), log(3951), 1, 64);
+
+    // Shift elements to the right
+    for (int i = 64- 1; i > 0; --i) {
+        oscGraph[i] = oscGraph[i - 1];
+    }
+
+    // Add the saved element to the first position
+    oscGraph[0] = val;
 }
 /*
 void core0Loop(void *parameter){
@@ -295,9 +341,14 @@ void loop() {
 void potFunc1(){
   int i = analogRead(potPin1);
   //Serial.println(i);
-  if (mode==0){
-    bpm = map(i, 0, 4095, 40, 200);
+  if (mode == 0){
+    ampl = static_cast<float>(i) / 4095.0; // Normalizing to range [0.0, 1.0]
+    osc.setAmpl(ampl);
   }
+  else if (mode==1){
+    //bpm = map(i, 0, 4095, 40, 200);
+  }
+  
   
   
 }
@@ -339,7 +390,8 @@ void audioPipeline(bool p){
   }
 
   dac_output_voltage(DAC_CHANNEL_1, (int)sample);
-  if(p){delayMicroseconds(1000000 / osc.sampleRate);}
+  if(p){delayMicroseconds(1000000 / osc.sampleRate);
+  }
   
   //delayMicroseconds(100000 / osc.sampleRate);
   //vTaskDelay(1);
