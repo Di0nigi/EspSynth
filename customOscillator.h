@@ -8,8 +8,8 @@
 
 class Oscillator{
   public: 
-  float amplitude = 127;
-  int sampleRate = 16000;
+  float amplitude = 0.5;
+  int sampleRate = 8000;
   float phase=0.0;  
   float phaseIncrement=0.0; 
   int frequency = 0;
@@ -50,8 +50,11 @@ class Oscillator{
     return val;
 
   }
-  void changeType(int w){
+  void setType(int w){
     type = w;
+  }
+  void setAmpl(float ampl){
+    amplitude = ampl;
   }
 
 };
