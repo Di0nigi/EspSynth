@@ -1,56 +1,57 @@
-#ifndef CUSTOMOSCILLATOR_H  // Prevents multiple inclusions
+#ifndef CUSTOMOSCILLATOR_H  
 #define CUSTOMOSCILLATOR_H
 
-// Add necessary includes
+
 #include <Arduino.h>
 #include <math.h>
 
 
 class Oscillator{
   public: 
-  int amplitude = 127;
-  int sampleRate = 8000;
-  unsigned long phase=0;  // Phase accumulator for waveform
-  int phaseIncrement=0; 
+  float amplitude = 127;
+  int sampleRate = 16000;
+  float phase=0.0;  
+  float phaseIncrement=0.0; 
   int frequency = 0;
 
 
   int type = 0;
   Oscillator(){};
+  
   void setFrequency(int freq) {
         frequency = freq;
-        phaseIncrement = (frequency * 65536) / sampleRate;
+        phaseIncrement = static_cast<float>(frequency) / sampleRate;
     }
 
-  int sample(){
+  float sample(){
 
     //phaseIncrement = (freq* 65536) / sampleRate;
 
-    int val=0;
+    float val =0.0 ;
 
     switch (type) {
-            case 0: // Sine wave
-                val = amplitude * sin(2 * PI * phase / 65536) + 128;
+            case 0:
+                val = amplitude * (phase < 0.5 ? 1.0 : -1.0);
                 break;
-            case 1: // Square wave
-                val = (phase < 32768) ? amplitude + 128 : 128 - amplitude;
+            case 1:
+                val = amplitude * sin(2 * M_PI * phase);
                 break;
-            case 2: // Sawtooth wave
-                val = (phase >> 8) - 128;
+            case 2:
+                val = amplitude * (2.0 * phase - 1.0);
                 break;
-            case 3: // Triangle wave
-                val = (phase < 32768) ? (phase >> 7) - 128 : 127 - (phase >> 7);
+            case 3:
+                val = amplitude * (phase < 0.5 ? 4.0 * phase - 1.0 : 3.0 - 4.0 * phase);
                 break;
         }
-
-        phase = (phase + phaseIncrement) & 0xFFFF;
+       // Serial.print("val:");
+       // Serial.println(val);
+        phase += phaseIncrement;
+        if (phase >= 1.0) phase -= 1.0;
     return val;
 
   }
   void changeType(int w){
-
     type = w;
-
   }
 
 };

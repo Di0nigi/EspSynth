@@ -134,6 +134,8 @@ void setup() {
   }
 
   display.clearDisplay();
+
+  dac_output_enable(DAC_CHANNEL_1); 
   
 
   pinMode(potPin1,INPUT);
@@ -313,13 +315,18 @@ void playNote(int sample){
 
 
 void audioPipeline(bool p){
-  int sample =0;
+  float sample = 0.0;
   if (p){
     osc.setFrequency(currentNote);
     sample = osc.sample();
+    Serial.println(sample);
+    sample = (int)((sample + 1.0) * 127.5);
     //playNote(sample);
   }
-  dacWrite(dacPin,sample);
+
+  dac_output_voltage(DAC_CHANNEL_1, (int)sample);
+  if(p){delayMicroseconds(1000000 / osc.sampleRate);}
+  
   //delayMicroseconds(100000 / osc.sampleRate);
   //vTaskDelay(1);
 }
