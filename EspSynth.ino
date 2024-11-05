@@ -62,8 +62,9 @@ int regNotes[8][12] = {
     {2093, 2217, 2349, 2489, 2637, 2794, 2960, 3136, 3322, 3520, 3729, 3951}
 };
 
-int oscGraph[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
+//int oscGraph[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+int oscGraph[64] = {0};  // Stores samples for display
+int oscIndex = 0; 
 
 
 int prevMPStatus= HIGH;
@@ -187,8 +188,8 @@ void ioHandler(){
     //Serial.println( regNotes[oct-1][11]);
     play = true;
   }
-  if(play){circularShiftRight(currentNote);}
-  else{circularShiftRight(1);}
+  //if(play){circularShiftRight(currentNote);}
+  //else{circularShiftRight(1);}
   
   
   //playNote(0);
@@ -212,8 +213,8 @@ void render(void *parameter){
   //display.println(bpm);
   display.print("oct: ");
   display.println(oct);
-  display.print("ampl: ");
-  display.println(ampl);
+  //display.print("ampl: ");
+  //display.println(ampl);
   if (wav == 0){
     display.println("wav: sqr");
   }
@@ -245,9 +246,6 @@ void render(void *parameter){
   }
    display.print("freq: ");
   display.println(lfoFreq);
-
-
-
   }
   else if (mode == 2){
     display.println("M: rev");
@@ -261,16 +259,27 @@ void render(void *parameter){
     display.println("M: eff");
 
   }
-  display.fillRect(64, 0, 1, SCREEN_HEIGHT, WHITE);
-  display.fillRect(64, SCREEN_HEIGHT-1, 64, 1, WHITE);
+  /*
   int start=64;
   for (int i = 0; i < 64; ++i) {
     int barHeight = oscGraph[i]+1;
     display.fillRect(start, SCREEN_HEIGHT-barHeight, 1, barHeight, WHITE);
     start++;
-  }
+  }*/
+  display.fillRect(64, 0, 1, SCREEN_HEIGHT, WHITE);
+  display.fillRect(64, SCREEN_HEIGHT-1, 64, 1, WHITE);
+   const int xOffset = 64;          
+  const int yOffset =( SCREEN_HEIGHT / 2) + 32; 
+
+    for (int i = 0; i < 64- 1; i++) {
+      int y1 = yOffset - oscGraph[i];             // Adjust sample to fit in vertical center
+      int y2 = yOffset - oscGraph[i + 1];         // Next sample y-coordinate
+      display.drawLine(xOffset + i, y1, xOffset + i + 1, y2, SSD1306_WHITE);  // Offset x by 64
+    }
   display.display();
-  // vTaskDelay(100 / portTICK_PERIOD_MS);
+  //vTaskDelay(30 / portTICK_PERIOD_MS);
+
+   //vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }
 
@@ -361,8 +370,8 @@ void potFunc1(){
   int i = analogRead(potPin1);
   //Serial.println(i);
   if (mode == 0){
-    ampl = static_cast<float>(i) / 4095.0; // Normalizing to range [0.0, 1.0]
-    osc.setAmpl(ampl);
+    //ampl = static_cast<float>(i) / 4095.0; // Normalizing to range [0.0, 1.0]
+    //osc.setAmpl(ampl);
   }
   else if (mode==1){
     //bpm = map(i, 0, 4095, 40, 200);
@@ -416,6 +425,10 @@ void audioPipeline(bool p){
     osc.setFrequency(currentNote);
     sample = osc.sample();
     //Serial.println(sample);
+    int displaySample = (int)((sample + 1.0) * (SCREEN_HEIGHT / 2.0));
+    oscGraph[oscIndex] = displaySample;  // Store in oscilloscope buffer
+    oscIndex = (oscIndex + 1) % 64;
+
     sample = (int)((sample + 1.0) * 127.5);
     //playNote(sample);
   }
