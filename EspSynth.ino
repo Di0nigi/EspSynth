@@ -81,12 +81,17 @@ int wav = 0;
 int oct = 1;
 int currentNote = 0;
 
+int lfoFreq = 20;
+int lfowav = 0;
+
+
 unsigned long previousMicros = 0;
 int t = 0;
 
 
 
 Oscillator osc;
+Oscillator lfo;
 
 bool play = false;
 
@@ -226,6 +231,22 @@ void render(void *parameter){
   }
   else if (mode == 1){
     display.println("M: lfo");
+    if (lfowav == 0){
+    display.println("wav: sqr");
+  }
+  else if (lfowav == 1){
+    display.println("wav: sin");
+  }
+  else if (lfowav == 2){
+    display.println("wav: saw");
+  }
+  else if (lfowav == 3){
+    display.println("wav: tri");
+  }
+   display.print("freq: ");
+  display.println(lfoFreq);
+
+
 
   }
   else if (mode == 2){
@@ -248,8 +269,6 @@ void render(void *parameter){
     display.fillRect(start, SCREEN_HEIGHT-barHeight, 1, barHeight, WHITE);
     start++;
   }
-  
-  
   display.display();
   // vTaskDelay(100 / portTICK_PERIOD_MS);
   }
@@ -347,6 +366,7 @@ void potFunc1(){
   }
   else if (mode==1){
     //bpm = map(i, 0, 4095, 40, 200);
+    lfoFreq = map(i, 0, 4095, 0,20);
   }
   
   
@@ -359,6 +379,11 @@ void potFunc2(){
   if (mode==0){oct = map(j, 0, 4095, 1, 8);
   //Serial.println(oct);
   }
+  else if (mode ==1){
+    lfowav = map(j, 0, 4095, 0, 3);
+
+  }
+  
   
  
 }
@@ -382,6 +407,12 @@ void playNote(int sample){
 void audioPipeline(bool p){
   float sample = 0.0;
   if (p){
+
+    lfo.setFrequency(lfoFreq);
+    float lfoSample = lfo.sample();
+    float modulatedAmplitude = 0.5 + 0.5 * lfoSample; 
+    osc.setAmpl(modulatedAmplitude);
+
     osc.setFrequency(currentNote);
     sample = osc.sample();
     //Serial.println(sample);
